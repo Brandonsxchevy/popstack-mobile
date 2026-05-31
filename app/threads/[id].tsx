@@ -99,7 +99,7 @@ export default function ThreadScreen() {
     <KeyboardAvoidingView 
   style={styles.container} 
   behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-  keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+  keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
       {/* Nav */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
