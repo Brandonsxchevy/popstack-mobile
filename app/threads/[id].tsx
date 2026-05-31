@@ -96,7 +96,7 @@ export default function ThreadScreen() {
     : TIER_LABELS[session?.tier] || null
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}><KeyboardAvoidingView 
+    <KeyboardAvoidingView 
   style={styles.container} 
   behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
   keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
