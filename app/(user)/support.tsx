@@ -1,4 +1,3 @@
-cat > app/\(user\)/support.tsx << 'EOF'
 import { useState } from 'react'
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, FlatList } from 'react-native'
 import { useMutation, useQuery } from '@tanstack/react-query'
