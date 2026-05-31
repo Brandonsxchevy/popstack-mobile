@@ -1,13 +1,22 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function UserLayout() {
+  const insets = useSafeAreaInsets()
+
   return (
     <Tabs screenOptions={{
       headerShown: false,
       tabBarActiveTintColor: '#6C2FFF',
       tabBarInactiveTintColor: '#9CA3AF',
-      tabBarStyle: { borderTopWidth: 0.5, borderTopColor: '#E5E7EB', paddingBottom: 24, paddingTop: 8, height: 72 },
+      tabBarStyle: {
+        borderTopWidth: 0.5,
+        borderTopColor: '#E5E7EB',
+        paddingBottom: insets.bottom || 8,
+        paddingTop: 8,
+        height: 52 + (insets.bottom || 8),
+      },
     }}>
       <Tabs.Screen name="dashboard" options={{
         title: 'Requests',

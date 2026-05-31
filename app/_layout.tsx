@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Stack } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useAuthStore } from '../lib/store'
 import { API_URL } from '../lib/api'
 
@@ -16,14 +17,16 @@ export default function RootLayout() {
   const isStaging = API_URL.includes('staging')
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {isStaging && (
-        <View style={styles.stagingBanner}>
-          <Text style={styles.stagingText}>⚠️ Staging — use card 4242 4242 4242 4242</Text>
-        </View>
-      )}
-      <Stack screenOptions={{ headerShown: false }} />
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        {isStaging && (
+          <View style={styles.stagingBanner}>
+            <Text style={styles.stagingText}>⚠️ Staging — use card 4242 4242 4242 4242</Text>
+          </View>
+        )}
+        <Stack screenOptions={{ headerShown: false }} />
+      </QueryClientProvider>
+    </SafeAreaProvider>
   )
 }
 
