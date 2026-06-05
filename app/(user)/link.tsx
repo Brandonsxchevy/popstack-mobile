@@ -24,7 +24,7 @@ export default function LinkScreen() {
     const shortcode = match[1]
     setLoading(true)
     try {
-      const res = await api.get(`/dev-links/resolve/${shortcode}`)
+      const res = await api.get(`/r/${shortcode}`)
       const link = res.data
       // Navigate to ask with pre-filled params from the link
       router.push({
