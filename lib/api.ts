@@ -1,7 +1,7 @@
 import axios from 'axios'
 import * as SecureStore from 'expo-secure-store'
 
-export const API_URL = 'https://api.popstack.dev/api/v1'
+export const API_URL = 'https://popstack-api-staging.onrender.com/api/v1'
 
 export const api = axios.create({
   baseURL: API_URL,
