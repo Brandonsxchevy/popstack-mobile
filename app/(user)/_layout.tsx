@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export default function UserLayout() {
   const insets = useSafeAreaInsets()
-
   return (
     <Tabs screenOptions={{
       headerShown: false,
@@ -25,6 +24,10 @@ export default function UserLayout() {
       <Tabs.Screen name="ask" options={{
         title: 'New',
         tabBarIcon: ({ color, size }) => <Ionicons name="add-circle-outline" size={size} color={color} />,
+      }} />
+      <Tabs.Screen name="link" options={{
+        title: 'Link',
+        tabBarIcon: ({ color, size }) => <Ionicons name="link-outline" size={size} color={color} />,
       }} />
       <Tabs.Screen name="support" options={{
         title: 'Support',

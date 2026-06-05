@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 
@@ -19,14 +19,31 @@ const URGENCY_OPTIONS = [
 export default function AskScreen() {
   const router = useRouter()
   const qc = useQueryClient()
-  const [title, setTitle] = useState('')
+  const params = useLocalSearchParams<{
+    prefillTitle?: string
+    prefillUrl?: string
+    prefillBudget?: string
+    devLinkId?: string
+    devId?: string
+  }>()
+
+  const [title, setTitle] = useState(params.prefillTitle || '')
   const [description, setDescription] = useState('')
-  const [url, setUrl] = useState('')
-  const [budgetTier, setBudgetTier] = useState('TWENTY')
+  const [url, setUrl] = useState(params.prefillUrl || '')
+  const [budgetTier, setBudgetTier] = useState(params.prefillBudget || 'TWENTY')
   const [urgency, setUrgency] = useState('MEDIUM')
 
   const submit = useMutation({
-    mutationFn: () => api.post('/questions', { title, description, url, budgetTier, urgency, screenshotKeys: [] }),
+    mutationFn: () => api.post('/questions', {
+      title,
+      description,
+      url,
+      budgetTier,
+      urgency,
+      screenshotKeys: [],
+      ...(params.devLinkId && { devLinkId: params.devLinkId }),
+      ...(params.devId && { devId: params.devId }),
+    }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-questions'] })
       router.replace('/(user)/dashboard')
@@ -34,6 +51,8 @@ export default function AskScreen() {
   })
 
   const canSubmit = title.trim().length >= 5 && url.trim().length > 0
+
+  const isFromLink = !!params.devLinkId
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -53,6 +72,13 @@ export default function AskScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+
+        {isFromLink && (
+          <View style={styles.linkBanner}>
+            <Text style={styles.linkBannerText}>🔗 Sent directly to your developer</Text>
+          </View>
+        )}
+
         <Text style={styles.label}>What's the problem? *</Text>
         <TextInput
           style={styles.input}
@@ -137,6 +163,11 @@ const styles = StyleSheet.create({
   submitBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 40 },
+  linkBanner: {
+    backgroundColor: '#EEEDFE', borderRadius: 10, padding: 12,
+    marginBottom: 16, alignItems: 'center',
+  },
+  linkBannerText: { fontSize: 13, fontWeight: '600', color: '#6C2FFF' },
   label: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 8, marginTop: 16 },
   input: {
     borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12,
