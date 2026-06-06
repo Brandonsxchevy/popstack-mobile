@@ -20,14 +20,14 @@ export default function LinkScreen() {
       const profileMatch = trimmed.match(/\/dev\/([a-zA-Z0-9_-]+)/)
       if (profileMatch) {
         const username = profileMatch[1]
-        const res = await api.get(`/dev/${username}`)
+        const res = await api.get(`/profiles/${username}`)
         const dev = res.data
         router.push({
           pathname: '/(user)/ask',
           params: {
             prefillTitle: '',
             prefillUrl: '',
-            prefillBudget: 'TWENTY',
+            prefillBudget: 'FIFTEEN_MIN',
             devId: dev.id,
           },
         })
