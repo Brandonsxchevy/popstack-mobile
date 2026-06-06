@@ -24,6 +24,7 @@ export default function AskScreen() {
     prefillUrl?: string
     prefillBudget?: string
     devLinkId?: string
+    preSelectedDevId?: string
     devId?: string
   }>()
 
@@ -41,7 +42,7 @@ export default function AskScreen() {
       budgetTier,
       urgency,
       screenshotKeys: [],
-      ...(params.devLinkId && { devLinkId: params.devLinkId }),
+      ...(params.devId && { preSelectedDevId: params.devId }),
       ...(params.devId && { devId: params.devId }),
     }),
     onSuccess: () => {
