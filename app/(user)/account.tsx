@@ -19,6 +19,7 @@ const LANGUAGES = [
 
 export default function AccountScreen() {
   const { user, clearAuth, setUser } = useAuthStore()
+  const router = useRouter()
   const qc = useQueryClient()
   const [tab, setTab] = useState('Profile')
   const [name, setName] = useState(user?.name || '')
@@ -92,7 +93,7 @@ export default function AccountScreen() {
             <Text style={s.btnText}>{updateProfile.isPending ? 'Saving...' : 'Save changes'}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={s.dangerBtn} onPress={() => { clearAuth() }}>
+          <TouchableOpacity style={s.dangerBtn} onPress={async () => { await clearAuth(); router.replace('/(auth)/login') }}>
             <Text style={s.dangerText}>Log out</Text>
           </TouchableOpacity>
         </View>
