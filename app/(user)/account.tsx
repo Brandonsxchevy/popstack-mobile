@@ -1,147 +1,183 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Alert } from 'react-native'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore } from '../../lib/store'
 import { api } from '../../lib/api'
+import { useAuthStore } from '../../lib/store'
+
+const TABS = ['Profile', 'Retainers', 'Security']
+
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'zh', label: 'Chinese' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ar', label: 'Arabic' },
+  { code: 'hi', label: 'Hindi' },
+]
 
 export default function AccountScreen() {
-  const router = useRouter()
+  const { user, clearAuth, setUser } = useAuthStore()
   const qc = useQueryClient()
-  const { user, clearAuth } = useAuthStore()
+  const [tab, setTab] = useState('Profile')
+  const [name, setName] = useState(user?.name || '')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
-  const { data: retainers = [], isLoading: loadingRetainers } = useQuery({
+  const { data: retainers = [], isLoading: retainersLoading } = useQuery({
     queryKey: ['my-retainers'],
-    queryFn: () => api.get('/retainers/my').then(r => r.data),
+    queryFn: () => api.get('/retainers/mine').then(r => r.data),
+    enabled: tab === 'Retainers',
   })
 
-  const cancel = useMutation({
-    mutationFn: (retainerId: string) => api.post(`/retainers/${retainerId}/cancel`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['my-retainers'] }),
+  const updateProfile = useMutation({
+    mutationFn: () => api.patch('/profiles/me', { name }),
+    onSuccess: () => Alert.alert('Success', 'Profile updated!'),
+    onError: (err: any) => Alert.alert('Error', err.response?.data?.message || 'Failed to update'),
   })
 
-  const handleLogout = async () => {
-    await clearAuth()
-    router.replace('/(auth)/login')
+  const changePassword = useMutation({
+    mutationFn: () => api.post('/auth/change-password', { currentPassword, newPassword }),
+    onSuccess: () => {
+      Alert.alert('Success', 'Password changed!')
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
+    },
+    onError: (err: any) => Alert.alert('Error', err.response?.data?.message || 'Failed'),
+  })
+
+  const cancelRetainer = useMutation({
+    mutationFn: (id: string) => api.delete(`/retainers/${id}`),
+    onSuccess: () => {
+      Alert.alert('Cancelled', 'Retainer cancelled — access continues until end of billing period')
+      qc.invalidateQueries({ queryKey: ['my-retainers'] })
+    },
+    onError: (err: any) => Alert.alert('Error', err.response?.data?.message || 'Failed'),
+  })
+
+  const handlePasswordChange = () => {
+    if (newPassword !== confirmPassword) { Alert.alert('Error', 'Passwords do not match'); return }
+    if (newPassword.length < 8) { Alert.alert('Error', 'Password must be at least 8 characters'); return }
+    changePassword.mutate()
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Account</Text>
+    <ScrollView style={s.container} contentContainerStyle={{ paddingBottom: 40 }}>
+      <Text style={s.title}>Account</Text>
+
+      {/* Tabs */}
+      <View style={s.tabs}>
+        {TABS.map(t => (
+          <TouchableOpacity key={t} style={[s.tab, tab === t && s.tabActive]} onPress={() => setTab(t)}>
+            <Text style={[s.tabText, tab === t && s.tabTextActive]}>{t}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
 
-        {/* Profile card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() || '?'}</Text>
+      {/* Profile Tab */}
+      {tab === 'Profile' && (
+        <View style={s.card}>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
           </View>
-          <View>
-            <Text style={styles.name}>{user?.name}</Text>
-            <Text style={styles.email}>{user?.email}</Text>
-          </View>
-        </View>
+          <Text style={s.userName}>{user?.name}</Text>
+          <Text style={s.userEmail}>{user?.email}</Text>
+          <Text style={s.userRole}>{user?.role === 'USER' ? 'Popper' : 'Stacker'}</Text>
 
-        {/* Retainers section */}
-        <Text style={styles.sectionTitle}>Active Retainers</Text>
-        {loadingRetainers ? (
-          <ActivityIndicator size="small" color="#6C2FFF" style={{ marginBottom: 24 }} />
-        ) : retainers.length === 0 ? (
-          <View style={styles.emptyRetainers}>
-            <Text style={styles.emptyRetainersText}>No active retainers</Text>
-            <Text style={styles.emptyRetainersSub}>
-              Subscribe to a developer's retainer from their profile for priority access.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.retainerList}>
-            {retainers.map((r: any) => (
-              <View key={r.id} style={styles.retainerCard}>
-                <View style={styles.retainerLeft}>
-                  <View style={styles.retainerAvatar}>
-                    <Text style={styles.retainerAvatarText}>
-                      {r.developer?.name?.[0]?.toUpperCase() || '?'}
-                    </Text>
-                  </View>
-                  <View>
-                    <Text style={styles.retainerName}>{r.developer?.name || 'Developer'}</Text>
-                    <Text style={styles.retainerPrice}>$300 / month</Text>
-                    <View style={[styles.retainerBadge, r.status === 'ACTIVE' ? styles.retainerBadgeActive : styles.retainerBadgeCancelled]}>
-                      <Text style={[styles.retainerBadgeText, r.status === 'ACTIVE' ? styles.retainerBadgeTextActive : styles.retainerBadgeTextCancelled]}>
-                        {r.status === 'ACTIVE' ? 'Active' : r.status === 'CANCEL_AT_PERIOD_END' ? 'Cancels at period end' : r.status}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                {r.status === 'ACTIVE' && (
-                  <TouchableOpacity
-                    style={styles.cancelBtn}
-                    onPress={() => cancel.mutate(r.id)}
-                    disabled={cancel.isPending}>
-                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
+          <Text style={s.label}>Display name</Text>
+          <TextInput style={s.input} value={name} onChangeText={setName} placeholder="Your name" />
 
-        {/* Log out */}
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.row} onPress={handleLogout}>
-            <Text style={styles.rowTextDanger}>Log out</Text>
+          <TouchableOpacity style={s.btn} onPress={() => updateProfile.mutate()} disabled={updateProfile.isPending}>
+            <Text style={s.btnText}>{updateProfile.isPending ? 'Saving...' : 'Save changes'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={s.dangerBtn} onPress={() => { clearAuth() }}>
+            <Text style={s.dangerText}>Log out</Text>
           </TouchableOpacity>
         </View>
+      )}
 
-      </ScrollView>
-    </View>
+      {/* Retainers Tab */}
+      {tab === 'Retainers' && (
+        <View>
+          {retainersLoading ? (
+            <ActivityIndicator style={{ marginTop: 40 }} color="#6C2FFF" />
+          ) : retainers.length === 0 ? (
+            <View style={s.empty}>
+              <Text style={s.emptyIcon}>⚡</Text>
+              <Text style={s.emptyTitle}>No active retainers</Text>
+              <Text style={s.emptyDesc}>Subscribe to a developer's priority access from their profile</Text>
+            </View>
+          ) : (
+            retainers.map((r: any) => (
+              <View key={r.id} style={s.card}>
+                <View style={s.retainerRow}>
+                  <View style={s.avatar}>
+                    <Text style={s.avatarText}>{r.developer?.name?.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.userName}>{r.developer?.name}</Text>
+                    <Text style={s.userEmail}>${(r.monthlyPriceCents / 100).toFixed(0)}/mo · {r.slaHours}h SLA</Text>
+                    {r.discountPct > 0 && <Text style={{ fontSize: 12, color: '#16a34a' }}>{r.discountPct}% off sessions</Text>}
+                  </View>
+                  <TouchableOpacity onPress={() => Alert.alert('Cancel retainer?', 'You\'ll keep access until end of billing period.', [
+                    { text: 'No' },
+                    { text: 'Cancel', style: 'destructive', onPress: () => cancelRetainer.mutate(r.id) }
+                  ])}>
+                    <Text style={{ fontSize: 12, color: '#ef4444' }}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={s.userEmail}>Renews {new Date(r.nextRenewalAt).toLocaleDateString()}</Text>
+              </View>
+            ))
+          )}
+        </View>
+      )}
+
+      {/* Security Tab */}
+      {tab === 'Security' && (
+        <View style={s.card}>
+          <Text style={s.sectionTitle}>Change password</Text>
+          <Text style={s.label}>Current password</Text>
+          <TextInput style={s.input} value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry placeholder="Current password" />
+          <Text style={s.label}>New password</Text>
+          <TextInput style={s.input} value={newPassword} onChangeText={setNewPassword} secureTextEntry placeholder="Min 8 characters" />
+          <Text style={s.label}>Confirm new password</Text>
+          <TextInput style={s.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry placeholder="Repeat new password" />
+          <TouchableOpacity style={s.btn} onPress={handlePasswordChange} disabled={changePassword.isPending}>
+            <Text style={s.btnText}>{changePassword.isPending ? 'Changing...' : 'Change password'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  header: {
-    paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16,
-    backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#E5E7EB',
-  },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827' },
-  content: { padding: 20 },
-  profileCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    backgroundColor: '#fff', borderRadius: 14, padding: 16,
-    borderWidth: 0.5, borderColor: '#E5E7EB', marginBottom: 24,
-  },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#EEEDFE', alignItems: 'center', justifyContent: 'center' },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F9FAFB', padding: 16 },
+  title: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 16, marginTop: 8 },
+  tabs: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, padding: 4, marginBottom: 16, gap: 4 },
+  tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
+  tabActive: { backgroundColor: '#6C2FFF' },
+  tabText: { fontSize: 12, fontWeight: '500', color: '#6B7280' },
+  tabTextActive: { color: '#fff' },
+  card: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12 },
+  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#EEEDFE', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   avatarText: { fontSize: 20, fontWeight: '700', color: '#6C2FFF' },
-  name: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  email: { fontSize: 13, color: '#6B7280', marginTop: 2 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  emptyRetainers: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 20,
-    borderWidth: 0.5, borderColor: '#E5E7EB', marginBottom: 24, alignItems: 'center',
-  },
-  emptyRetainersText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF', marginBottom: 6 },
-  emptyRetainersSub: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', lineHeight: 18 },
-  retainerList: { gap: 10, marginBottom: 24 },
-  retainerCard: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 16,
-    borderWidth: 0.5, borderColor: '#E5E7EB',
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-  },
-  retainerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  retainerAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#EEEDFE', alignItems: 'center', justifyContent: 'center' },
-  retainerAvatarText: { fontSize: 16, fontWeight: '700', color: '#6C2FFF' },
-  retainerName: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 2 },
-  retainerPrice: { fontSize: 12, color: '#6B7280', marginBottom: 6 },
-  retainerBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, alignSelf: 'flex-start' },
-  retainerBadgeActive: { backgroundColor: '#EAF3DE' },
-  retainerBadgeCancelled: { backgroundColor: '#F3F4F6' },
-  retainerBadgeText: { fontSize: 11, fontWeight: '600' },
-  retainerBadgeTextActive: { color: '#27500A' },
-  retainerBadgeTextCancelled: { color: '#6B7280' },
-  cancelBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: '#E5E7EB' },
-  cancelBtnText: { fontSize: 12, color: '#EF4444', fontWeight: '600' },
-  section: { backgroundColor: '#fff', borderRadius: 14, borderWidth: 0.5, borderColor: '#E5E7EB', overflow: 'hidden' },
-  row: { paddingHorizontal: 16, paddingVertical: 16 },
-  rowTextDanger: { fontSize: 15, color: '#EF4444' },
+  userName: { fontSize: 15, fontWeight: '600', color: '#111827' },
+  userEmail: { fontSize: 13, color: '#6B7280', marginTop: 2 },
+  userRole: { fontSize: 11, color: '#6B7280', backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, alignSelf: 'flex-start', marginTop: 4, marginBottom: 12 },
+  label: { fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 4, marginTop: 10 },
+  input: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 10, padding: 10, fontSize: 14, color: '#111827', backgroundColor: '#fff' },
+  btn: { backgroundColor: '#6C2FFF', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 14 },
+  btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  dangerBtn: { borderWidth: 1, borderColor: '#FCA5A5', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
+  dangerText: { color: '#EF4444', fontWeight: '600', fontSize: 14 },
+  sectionTitle: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
+  retainerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
+  empty: { alignItems: 'center', paddingVertical: 60 },
+  emptyIcon: { fontSize: 36, marginBottom: 10 },
+  emptyTitle: { fontSize: 15, fontWeight: '600', color: '#374151' },
+  emptyDesc: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 4 },
 })
