@@ -110,7 +110,7 @@ export default function LinkScreen() {
           <View style={styles.retainerCard}>
             <Text style={styles.retainerTitle}>⚡ Priority Access</Text>
             <Text style={styles.retainerPrice}>
-              ${(devProfile.profile.monthlyPriceCents / 100).toFixed(0)}/mo
+              ${(devProfile.profile?.monthlyPriceCents ? (devProfile.profile.monthlyPriceCents / 100).toFixed(0) : 300)}/mo
             </Text>
             {devProfile.profile.slaHours && (
               <Text style={styles.retainerDetail}>{devProfile.profile.slaHours}h response SLA</Text>
@@ -121,7 +121,7 @@ export default function LinkScreen() {
             <TouchableOpacity style={styles.subscribeBtn} onPress={handleSubscribe} disabled={subscribing}>
               {subscribing
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.subscribeBtnText}>Subscribe · ${(devProfile.profile.monthlyPriceCents / 100).toFixed(0)}/mo</Text>}
+                : <Text style={styles.subscribeBtnText}>Subscribe · ${(devProfile.profile?.monthlyPriceCents ? (devProfile.profile.monthlyPriceCents / 100).toFixed(0) : 300)}/mo</Text>}
             </TouchableOpacity>
           </View>
         )}
