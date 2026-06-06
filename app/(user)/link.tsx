@@ -1,16 +1,21 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Linking, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
-import { api } from '../../lib/api'
+import { api, API_URL } from '../../lib/api'
+import { useAuthStore } from '../../lib/store'
 
 export default function LinkScreen() {
   const router = useRouter()
+  const { token } = useAuthStore()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [devProfile, setDevProfile] = useState<any>(null)
+  const [subscribing, setSubscribing] = useState(false)
 
   const resolve = async () => {
     setError('')
+    setDevProfile(null)
     const trimmed = input.trim()
     if (!trimmed) return
 
@@ -21,16 +26,7 @@ export default function LinkScreen() {
       if (profileMatch) {
         const username = profileMatch[1]
         const res = await api.get(`/profiles/${username}`)
-        const dev = res.data
-        router.push({
-          pathname: '/(user)/ask',
-          params: {
-            prefillTitle: '',
-            prefillUrl: '',
-            prefillBudget: 'FIFTEEN_MIN',
-            devId: dev.id,
-          },
-        })
+        setDevProfile(res.data)
         return
       }
 
@@ -49,7 +45,7 @@ export default function LinkScreen() {
         params: {
           prefillTitle: link.customHeadline || '',
           prefillUrl: '',
-          prefillBudget: link.tier || 'TWENTY',
+          prefillBudget: link.tier || 'FIFTEEN_MIN',
           devId: link.developer?.id,
         },
       })
@@ -58,6 +54,85 @@ export default function LinkScreen() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSubscribe = async () => {
+    if (!devProfile) return
+    setSubscribing(true)
+    try {
+      const res = await api.post(`/retainers/subscribe/${devProfile.id}`, {})
+      if (res.data.checkoutUrl) {
+        Linking.openURL(res.data.checkoutUrl)
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Failed to start subscription')
+    } finally {
+      setSubscribing(false)
+    }
+  }
+
+  const handleAsk = () => {
+    if (!devProfile) return
+    router.push({
+      pathname: '/(user)/ask',
+      params: {
+        prefillTitle: '',
+        prefillUrl: '',
+        prefillBudget: 'FIFTEEN_MIN',
+        devId: devProfile.id,
+      },
+    })
+  }
+
+  if (devProfile) {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => setDevProfile(null)}>
+            <Text style={styles.backBtn}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Developer Profile</Text>
+        </View>
+        <View style={styles.profileCard}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{devProfile.name?.charAt(0).toUpperCase()}</Text>
+          </View>
+          <Text style={styles.devName}>{devProfile.name}</Text>
+          {devProfile.profile?.bio && (
+            <Text style={styles.devBio}>{devProfile.profile.bio}</Text>
+          )}
+          {devProfile.avgRating && (
+            <Text style={styles.devRating}>⭐ {devProfile.avgRating.toFixed(1)}</Text>
+          )}
+        </View>
+
+        {devProfile.profile?.retainerEnabled && (
+          <View style={styles.retainerCard}>
+            <Text style={styles.retainerTitle}>⚡ Priority Access</Text>
+            <Text style={styles.retainerPrice}>
+              ${(devProfile.profile.monthlyPriceCents / 100).toFixed(0)}/mo
+            </Text>
+            {devProfile.profile.slaHours && (
+              <Text style={styles.retainerDetail}>{devProfile.profile.slaHours}h response SLA</Text>
+            )}
+            {devProfile.profile.discountPct > 0 && (
+              <Text style={styles.retainerDiscount}>{devProfile.profile.discountPct}% off all sessions</Text>
+            )}
+            <TouchableOpacity style={styles.subscribeBtn} onPress={handleSubscribe} disabled={subscribing}>
+              {subscribing
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.subscribeBtnText}>Subscribe · ${(devProfile.profile.monthlyPriceCents / 100).toFixed(0)}/mo</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.actionsCard}>
+          <TouchableOpacity style={styles.askBtn} onPress={handleAsk}>
+            <Text style={styles.askBtnText}>Ask a question →</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    )
   }
 
   return (
@@ -105,12 +180,14 @@ export default function LinkScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#F9FAFB' },
   header: {
     paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16,
     backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#E5E7EB',
+    flexDirection: 'row', alignItems: 'center', gap: 12,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#111827' },
+  backBtn: { fontSize: 14, color: '#6C2FFF', fontWeight: '600' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
   content: { flex: 1, padding: 24 },
   iconWrap: { alignItems: 'center', marginTop: 24, marginBottom: 16 },
   icon: { fontSize: 48 },
@@ -131,4 +208,33 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   hint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center' },
   hintCode: { color: '#6C2FFF' },
+  profileCard: {
+    backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 20, alignItems: 'center',
+  },
+  avatar: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: '#EEEDFE',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
+  avatarText: { fontSize: 26, fontWeight: '700', color: '#6C2FFF' },
+  devName: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 6 },
+  devBio: { fontSize: 13, color: '#6B7280', textAlign: 'center', lineHeight: 20, marginBottom: 6 },
+  devRating: { fontSize: 14, color: '#F59E0B', fontWeight: '600' },
+  retainerCard: {
+    backgroundColor: '#EEEDFE', margin: 16, marginTop: 0, borderRadius: 16, padding: 20,
+  },
+  retainerTitle: { fontSize: 15, fontWeight: '700', color: '#4C1D95', marginBottom: 4 },
+  retainerPrice: { fontSize: 24, fontWeight: '800', color: '#6C2FFF', marginBottom: 4 },
+  retainerDetail: { fontSize: 13, color: '#5B21B6', marginBottom: 2 },
+  retainerDiscount: { fontSize: 13, color: '#16a34a', fontWeight: '500', marginBottom: 12 },
+  subscribeBtn: {
+    backgroundColor: '#6C2FFF', borderRadius: 12,
+    paddingVertical: 13, alignItems: 'center', marginTop: 8,
+  },
+  subscribeBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  actionsCard: { margin: 16, marginTop: 0 },
+  askBtn: {
+    borderWidth: 1.5, borderColor: '#6C2FFF', borderRadius: 12,
+    paddingVertical: 13, alignItems: 'center',
+  },
+  askBtnText: { color: '#6C2FFF', fontWeight: '700', fontSize: 15 },
 })
