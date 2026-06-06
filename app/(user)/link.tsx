@@ -14,26 +14,42 @@ export default function LinkScreen() {
     const trimmed = input.trim()
     if (!trimmed) return
 
-    // Extract shortcode from full URL or bare shortcode
-    const match = trimmed.match(/\/r\/([a-zA-Z0-9]+)/) || trimmed.match(/^([a-zA-Z0-9]+)$/)
-    if (!match) {
-      setError('Invalid link — paste a full PopStack link or shortcode')
-      return
-    }
-
-    const shortcode = match[1]
     setLoading(true)
     try {
+      // Check for dev profile URL: /dev/username
+      const profileMatch = trimmed.match(/\/dev\/([a-zA-Z0-9_-]+)/)
+      if (profileMatch) {
+        const username = profileMatch[1]
+        const res = await api.get(`/r/dev/${username}`)
+        const dev = res.data
+        router.push({
+          pathname: '/(user)/ask',
+          params: {
+            prefillTitle: '',
+            prefillUrl: '',
+            prefillBudget: 'TWENTY',
+            devId: dev.id,
+          },
+        })
+        return
+      }
+
+      // Extract shortcode from full URL or bare shortcode
+      const match = trimmed.match(/\/r\/([a-zA-Z0-9]+)/) || trimmed.match(/^([a-zA-Z0-9]+)$/)
+      if (!match) {
+        setError('Invalid link — paste a full PopStack link or shortcode')
+        return
+      }
+
+      const shortcode = match[1]
       const res = await api.get(`/r/${shortcode}`)
       const link = res.data
-      // Navigate to ask with pre-filled params from the link
       router.push({
         pathname: '/(user)/ask',
         params: {
           prefillTitle: link.customHeadline || '',
           prefillUrl: '',
           prefillBudget: link.tier || 'TWENTY',
-          devLinkId: link.id,
           devId: link.devId,
         },
       })
@@ -60,7 +76,7 @@ export default function LinkScreen() {
         <Text style={styles.label}>Paste link or shortcode</Text>
         <TextInput
           style={styles.input}
-          placeholder="app.popstack.dev/r/abc123"
+          placeholder="app.popstack.dev/r/abc123 or /dev/username"
           placeholderTextColor="#9CA3AF"
           value={input}
           onChangeText={t => { setInput(t); setError('') }}
@@ -80,6 +96,8 @@ export default function LinkScreen() {
         <Text style={styles.hint}>
           Links look like{' '}
           <Text style={styles.hintCode}>app.popstack.dev/r/abc123</Text>
+          {' '}or{' '}
+          <Text style={styles.hintCode}>app.popstack.dev/dev/username</Text>
         </Text>
       </View>
     </KeyboardAvoidingView>
