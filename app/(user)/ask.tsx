@@ -43,7 +43,6 @@ export default function AskScreen() {
       urgency,
       screenshotKeys: [],
       ...(params.devId && { preSelectedDevId: params.devId }),
-      ...(params.devId && { devId: params.devId }),
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-questions'] })

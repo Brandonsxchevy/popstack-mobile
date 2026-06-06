@@ -20,7 +20,7 @@ export default function LinkScreen() {
       const profileMatch = trimmed.match(/\/dev\/([a-zA-Z0-9_-]+)/)
       if (profileMatch) {
         const username = profileMatch[1]
-        const res = await api.get(`/r/dev/${username}`)
+        const res = await api.get(`/dev/${username}`)
         const dev = res.data
         router.push({
           pathname: '/(user)/ask',
@@ -50,7 +50,7 @@ export default function LinkScreen() {
           prefillTitle: link.customHeadline || '',
           prefillUrl: '',
           prefillBudget: link.tier || 'TWENTY',
-          devId: link.devId,
+          devId: link.developer?.id,
         },
       })
     } catch (err: any) {
