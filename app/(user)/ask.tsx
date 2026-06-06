@@ -5,9 +5,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 
 const BUDGET_OPTIONS = [
-  { value: 'FIVE', label: '$7.50', desc: 'Quick fix' },
-  { value: 'TWENTY', label: '$30', desc: '~15 min session' },
-  { value: 'FIFTY_PLUS', label: '$75+', desc: 'Complex problem' },
+  { value: 'QUICK_FOLLOWUP', label: '$7.50', desc: 'Quick fix' },
+  { value: 'FIFTEEN_MIN', label: '$30', desc: '~15 min session' },
+  { value: 'FULL_SOLUTION', label: '$75+', desc: 'Complex problem' },
 ]
 
 const URGENCY_OPTIONS = [
@@ -31,7 +31,7 @@ export default function AskScreen() {
   const [title, setTitle] = useState(params.prefillTitle || '')
   const [description, setDescription] = useState('')
   const [url, setUrl] = useState(params.prefillUrl || '')
-  const [budgetTier, setBudgetTier] = useState(params.prefillBudget || 'TWENTY')
+  const [budgetTier, setBudgetTier] = useState(params.prefillBudget || 'FIFTEEN_MIN')
   const [urgency, setUrgency] = useState('MEDIUM')
 
   const submit = useMutation({
