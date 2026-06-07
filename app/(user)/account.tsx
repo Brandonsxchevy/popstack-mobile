@@ -18,7 +18,7 @@ const LANGUAGES = [
 ]
 
 export default function AccountScreen() {
-  const { user, clearAuth, setUser } = useAuthStore()
+  const { user, clearAuth } = useAuthStore()
   const router = useRouter()
   const qc = useQueryClient()
   const [tab, setTab] = useState('Profile')
