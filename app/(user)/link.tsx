@@ -60,7 +60,7 @@ export default function LinkScreen() {
     if (!devProfile) return
     setSubscribing(true)
     try {
-      const res = await api.post(`/retainers/subscribe/${devProfile.id}`, {})
+      const res = await api.post(`/retainers/subscribe/${devProfile.id}`, { promoCode: promoCode.trim() || undefined })
       if (res.data.checkoutUrl) {
         Linking.openURL(res.data.checkoutUrl)
       }
