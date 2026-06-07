@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Linking, Alert } from 'react-native'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Linking, Alert, Image } from 'react-native'
 import { useRouter } from 'expo-router'
 import { api, API_URL } from '../../lib/api'
 import { useAuthStore } from '../../lib/store'
@@ -94,9 +94,13 @@ export default function LinkScreen() {
           <Text style={styles.headerTitle}>Developer Profile</Text>
         </View>
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{devProfile.name?.charAt(0).toUpperCase()}</Text>
-          </View>
+          {devProfile.avatarUrl ? (
+            <Image source={{ uri: devProfile.avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{devProfile.name?.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
           <Text style={styles.devName}>{devProfile.name}</Text>
           {devProfile.profile?.bio && (
             <Text style={styles.devBio}>{devProfile.profile.bio}</Text>
@@ -211,6 +215,7 @@ const styles = StyleSheet.create({
   profileCard: {
     backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 20, alignItems: 'center',
   },
+  avatarImage: { width: 64, height: 64, borderRadius: 32, marginBottom: 12 },
   avatar: {
     width: 64, height: 64, borderRadius: 32, backgroundColor: '#EEEDFE',
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
