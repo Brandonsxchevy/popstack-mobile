@@ -50,7 +50,7 @@ export default function AskScreen() {
     },
   })
 
-  const canSubmit = title.trim().length >= 5 && url.trim().length > 0
+  const canSubmit = title.trim().length >= 5
 
   const isFromLink = !!params.devLinkId
 
@@ -62,8 +62,10 @@ export default function AskScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Request</Text>
         <TouchableOpacity
-          onPress={() => submit.mutate()}
-          disabled={!canSubmit || submit.isPending}
+          onPress={() => {
+            if (!canSubmit) { const { Alert } = require("react-native"); Alert.alert("Required", "Please enter at least 5 characters for your problem description"); return; }
+            submit.mutate()
+          }}
           style={[styles.submitBtn, (!canSubmit || submit.isPending) && styles.submitBtnDisabled]}>
           {submit.isPending
             ? <ActivityIndicator size="small" color="#fff" />
