@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import * as ImagePicker from 'expo-image-picker'
 import { api } from '../../lib/api'
 
 const BUDGET_OPTIONS = [
@@ -33,6 +34,51 @@ export default function AskScreen() {
   const [url, setUrl] = useState(params.prefillUrl || '')
   const [budgetTier, setBudgetTier] = useState(params.prefillBudget || 'FIFTEEN_MIN')
   const [urgency, setUrgency] = useState('MEDIUM')
+  const [screenshotKeys, setScreenshotKeys] = useState<string[]>([])
+  const [screenshotUris, setScreenshotUris] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
+
+  const handleScreenshotPick = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please allow access to your photo library to upload screenshots.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 3,
+    })
+    if (result.canceled) return
+    setUploading(true)
+    try {
+      const newKeys: string[] = []
+      const newUris: string[] = []
+      for (const asset of result.assets) {
+        const { data } = await api.get('/uploads/screenshot')
+        const blob = await fetch(asset.uri).then(r => r.blob())
+        await fetch(data.uploadUrl, {
+          method: 'PUT',
+          body: blob,
+          headers: { 'Content-Type': 'image/jpeg' },
+        })
+        newKeys.push(data.key)
+        newUris.push(asset.uri)
+      }
+      setScreenshotKeys(prev => [...prev, ...newKeys])
+      setScreenshotUris(prev => [...prev, ...newUris])
+    } catch (err: any) {
+      Alert.alert('Upload failed', err.message || 'Could not upload screenshot')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeScreenshot = (index: number) => {
+    setScreenshotKeys(prev => prev.filter((_, i) => i !== index))
+    setScreenshotUris(prev => prev.filter((_, i) => i !== index))
+  }
 
   const submit = useMutation({
     mutationFn: () => api.post('/questions', {
@@ -41,7 +87,7 @@ export default function AskScreen() {
       url,
       budgetTier,
       urgency,
-      screenshotKeys: [],
+      screenshotKeys,
       ...(params.devId && { preSelectedDevId: params.devId }),
     }),
     onSuccess: () => {
@@ -51,8 +97,7 @@ export default function AskScreen() {
   })
 
   const canSubmit = title.trim().length >= 5
-
-  const isFromLink = !!params.devLinkId
+  const isFromLink = !!params.devId
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -63,10 +108,10 @@ export default function AskScreen() {
         <Text style={styles.headerTitle}>New Request</Text>
         <TouchableOpacity
           onPress={() => {
-            if (!canSubmit) { const { Alert } = require("react-native"); Alert.alert("Required", "Please enter at least 5 characters for your problem description"); return; }
+            if (!canSubmit) { Alert.alert('Required', 'Please enter at least 5 characters for your problem description'); return }
             submit.mutate()
           }}
-          style={[styles.submitBtn, (!canSubmit || submit.isPending) && styles.submitBtnDisabled]}>
+          style={[styles.submitBtn, (!canSubmit || submit.isPending || uploading) && styles.submitBtnDisabled]}>
           {submit.isPending
             ? <ActivityIndicator size="small" color="#fff" />
             : <Text style={styles.submitBtnText}>Post</Text>}
@@ -104,7 +149,7 @@ export default function AskScreen() {
           textAlignVertical="top"
         />
 
-        <Text style={styles.label}>Website URL *</Text>
+        <Text style={styles.label}>Website URL</Text>
         <TextInput
           style={styles.input}
           placeholder="https://yoursite.com"
@@ -114,6 +159,25 @@ export default function AskScreen() {
           autoCapitalize="none"
           keyboardType="url"
         />
+
+        <Text style={styles.label}>Screenshots</Text>
+        <View style={styles.screenshotRow}>
+          {screenshotUris.map((uri, i) => (
+            <View key={i} style={styles.screenshotThumb}>
+              <Image source={{ uri }} style={styles.screenshotImg} />
+              <TouchableOpacity style={styles.removeBtn} onPress={() => removeScreenshot(i)}>
+                <Text style={styles.removeBtnText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {screenshotKeys.length < 3 && (
+            <TouchableOpacity style={styles.uploadBtn} onPress={handleScreenshotPick} disabled={uploading}>
+              {uploading
+                ? <ActivityIndicator size="small" color="#6C2FFF" />
+                : <Text style={styles.uploadBtnText}>{screenshotKeys.length === 0 ? '+ Add screenshot' : '+ Add more'}</Text>}
+            </TouchableOpacity>
+          )}
+        </View>
 
         <Text style={styles.label}>Budget</Text>
         <View style={styles.optionRow}>
@@ -178,6 +242,21 @@ const styles = StyleSheet.create({
   },
   textarea: { height: 100, paddingTop: 12 },
   charCount: { fontSize: 11, color: '#9CA3AF', textAlign: 'right', marginTop: 4 },
+  screenshotRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  screenshotThumb: { width: 80, height: 80, borderRadius: 10, overflow: 'hidden', position: 'relative' },
+  screenshotImg: { width: 80, height: 80 },
+  removeBtn: {
+    position: 'absolute', top: 2, right: 2,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center',
+  },
+  removeBtnText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  uploadBtn: {
+    width: 80, height: 80, borderRadius: 10,
+    borderWidth: 1.5, borderColor: '#6C2FFF', borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEEDFE',
+  },
+  uploadBtnText: { fontSize: 11, color: '#6C2FFF', fontWeight: '600', textAlign: 'center' },
   optionRow: { flexDirection: 'row', gap: 8 },
   optionBtn: {
     flex: 1, padding: 12, borderRadius: 12,
