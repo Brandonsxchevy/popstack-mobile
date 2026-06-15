@@ -97,35 +97,39 @@ export default function AccountScreen() {
           <TouchableOpacity style={s.dangerBtn} onPress={async () => { await clearAuth(); router.replace('/(auth)/login') }}>
             <Text style={s.dangerText}>Log out</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.deleteBtn} onPress={() => {
-            Alert.alert(
-              'Delete Account',
-              'This will permanently delete your account and all data. This cannot be undone.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => {
-                  Alert.alert(
-                    'Are you sure?',
-                    'Last warning — all sessions, history and data will be lost forever.',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Delete Forever', style: 'destructive', onPress: async () => {
-                        try {
-                          await api.delete('/auth/me')
-                          await clearAuth()
-                          router.replace('/(auth)/login')
-                        } catch (err: any) {
-                          Alert.alert('Error', err.response?.data?.message || 'Failed to delete account')
-                        }
-                      }}
-                    ]
-                  )
-                }}
-              ]
-            )
-          }}>
-            <Text style={s.deleteBtnText}>Delete account permanently</Text>
-          </TouchableOpacity>
+
+          <View style={s.dangerZone}>
+            <Text style={s.dangerZoneTitle}>Danger zone</Text>
+            <TouchableOpacity style={s.deleteBtn} onPress={() => {
+              Alert.alert(
+                'Delete Account',
+                'This will permanently delete your account and all data. This cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: () => {
+                    Alert.alert(
+                      'Are you sure?',
+                      'Last warning — all sessions, history and data will be lost forever.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete Forever', style: 'destructive', onPress: async () => {
+                          try {
+                            await api.delete('/auth/me')
+                            await clearAuth()
+                            router.replace('/(auth)/login')
+                          } catch (err: any) {
+                            Alert.alert('Error', err.response?.data?.message || 'Failed to delete account')
+                          }
+                        }}
+                      ]
+                    )
+                  }}
+                ]
+              )
+            }}>
+              <Text style={s.deleteBtnText}>Delete account permanently</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -204,8 +208,10 @@ const s = StyleSheet.create({
   btn: { backgroundColor: '#6C2FFF', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 14 },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   dangerBtn: { borderWidth: 1, borderColor: '#FCA5A5', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
-  deleteBtn: { borderWidth: 1, borderColor: '#EF4444', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 8, backgroundColor: '#FEF2F2' },
-  deleteBtnText: { color: '#B91C1C', fontWeight: '700', fontSize: 14 },
+  dangerZone: { marginTop: 24, borderTopWidth: 1, borderTopColor: '#FEE2E2', paddingTop: 16 },
+  dangerZoneTitle: { fontSize: 11, fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 },
+  deleteBtn: { borderWidth: 1, borderColor: '#EF4444', borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: '#FEF2F2' },
+  deleteBtnText: { color: '#B91C1C', fontWeight: '600', fontSize: 13 },
   dangerText: { color: '#EF4444', fontWeight: '600', fontSize: 14 },
   sectionTitle: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
   retainerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
