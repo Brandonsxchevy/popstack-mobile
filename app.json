@@ -22,7 +22,8 @@
       "buildNumber": "2",
       "icon": "./assets/icon.png",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "PopStack uses your photo library to let you attach screenshots of your website issue when submitting a help request, so developers can better understand your problem."
       }
     },
     "android": {
