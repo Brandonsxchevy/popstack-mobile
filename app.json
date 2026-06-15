@@ -6,7 +6,10 @@
     "buildNumber": "2",
     "scheme": "popstack",
     "orientation": "portrait",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -29,7 +32,8 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#6C2FFF"
-      }
+      },
+      "package": "dev.popstack.app"
     },
     "plugins": [
       "expo-router",
