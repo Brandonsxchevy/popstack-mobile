@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Linking } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useAuthStore } from '../../lib/store'
 import { api } from '../../lib/api'
@@ -65,6 +65,9 @@ export default function LoginScreen() {
         <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
           <Text style={styles.link}>Don't have an account? Sign up</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL('https://app.popstack.dev/discover')} style={{ marginTop: 16 }}>
+          <Text style={styles.browse}>Browse developers without signing up →</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   )
@@ -87,4 +90,5 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   link: { color: '#6C2FFF', textAlign: 'center', fontSize: 14 },
+  browse: { color: '#9CA3AF', textAlign: 'center', fontSize: 13, marginTop: 4 },
 })
