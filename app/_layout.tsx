@@ -19,19 +19,25 @@ Notifications.setNotificationHandler({
 
 async function registerPushToken() {
   try {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync()
-    let finalStatus = existingStatus
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync()
-      finalStatus = status
-    }
-    if (finalStatus !== 'granted') return
-    const token = await Notifications.getExpoPushTokenAsync({
-      projectId: 'c207c9d3-c842-488b-8b50-fa37ab4aeea6',
-    })
-    await api.post('/notifications/token', { token: token.data })
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+    await Promise.race([
+      (async () => {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync()
+        let finalStatus = existingStatus
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync()
+          finalStatus = status
+        }
+        if (finalStatus !== 'granted') return
+        const token = await Notifications.getExpoPushTokenAsync({
+          projectId: 'c207c9d3-c842-488b-8b50-fa37ab4aeea6',
+        })
+        await api.post('/notifications/token', { token: token.data })
+      })(),
+      timeout,
+    ])
   } catch (err) {
-    console.log('Push token registration failed:', err)
+    console.log('Push token registration failed or timed out:', err)
   }
 }
 
