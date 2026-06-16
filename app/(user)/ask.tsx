@@ -92,6 +92,13 @@ export default function AskScreen() {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['my-questions'] })
+      setTitle('')
+      setDescription('')
+      setUrl('')
+      setBudgetTier('FIFTEEN_MIN')
+      setUrgency('MEDIUM')
+      setScreenshotKeys([])
+      setScreenshotUris([])
       router.replace('/(user)/dashboard')
     },
   })
