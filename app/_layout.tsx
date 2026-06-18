@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { View, Text, StyleSheet, Platform } from 'react-native'
+import { useEffect, useState } from 'react'
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import { Stack } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -44,9 +44,10 @@ async function registerPushToken() {
 export default function RootLayout() {
   const hydrate = useAuthStore(s => s.hydrate)
   const token = useAuthStore(s => s.token)
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
-    hydrate()
+    hydrate().finally(() => setHydrated(true))
   }, [])
 
   useEffect(() => {
@@ -56,6 +57,18 @@ export default function RootLayout() {
   }, [token])
 
   const isStaging = API_URL.includes('staging')
+
+  if (!hydrated) {
+    return (
+      <SafeAreaProvider>
+        <View style={styles.splash}>
+          <Text style={styles.splashLogo}>PopStack</Text>
+          <ActivityIndicator color="#6C2FFF" style={{ marginTop: 24 }} />
+        </View>
+      </SafeAreaProvider>
+    )
+  }
+
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
@@ -69,7 +82,19 @@ export default function RootLayout() {
     </SafeAreaProvider>
   )
 }
+
 const styles = StyleSheet.create({
+  splash: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  splashLogo: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#6C2FFF',
+  },
   stagingBanner: {
     backgroundColor: '#F59E0B',
     paddingVertical: 6,
