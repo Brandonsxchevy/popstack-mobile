@@ -103,7 +103,7 @@ export default function AskScreen() {
     },
   })
 
-  const canSubmit = title.trim().length >= 5
+  const canSubmit = title.trim().length >= 3
   const isFromLink = !!params.devId
 
   return (
@@ -115,7 +115,7 @@ export default function AskScreen() {
         <Text style={styles.headerTitle}>New Request</Text>
         <TouchableOpacity
           onPress={() => {
-            if (!canSubmit) { Alert.alert('Required', 'Please enter at least 5 characters for your problem description'); return }
+            if (!canSubmit) { Alert.alert('Required', 'Please enter at least 3 characters for your problem title'); return }
             submit.mutate()
           }}
           style={[styles.submitBtn, (!canSubmit || submit.isPending || uploading) && styles.submitBtnDisabled]}>
