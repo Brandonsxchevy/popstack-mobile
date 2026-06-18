@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useAuthStore } from '../../lib/store'
 import { api } from '../../lib/api'
@@ -20,7 +20,12 @@ export default function LoginScreen() {
       const res = await api.post('/auth/login', { email, password })
       const { accessToken, refreshToken, user } = res.data
       await setAuth(accessToken, refreshToken, user)
-      if (user.role === 'DEVELOPER') {
+      if (user.role === 'DEVELOPER' || user.role === 'ADMIN') {
+        logout()
+        Alert.alert('Access Restricted', 'Developer and admin accounts are not supported in the mobile app. Please use app.popstack.dev instead.')
+        return
+      }
+      if (user.role === 'DEVELOPER_UNUSED') {
         router.replace('/(dev)/swipe')
       } else {
         router.replace('/(user)/dashboard')
