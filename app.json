@@ -30,10 +30,10 @@
       }
     },
     "android": {
+      "package": "com.popstack.app",
       "adaptiveIcon": {
         "backgroundColor": "#6C2FFF"
-      },
-      "package": "dev.popstack.app"
+      }
     },
     "plugins": [
       "expo-router",
